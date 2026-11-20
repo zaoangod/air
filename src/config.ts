@@ -1,6 +1,8 @@
 import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
+import type {ModelMessage} from 'ai'
+import {parseMessageHistory} from './message-history.js'
 
 // ==================== 类型 ====================
 
@@ -23,6 +25,9 @@ export function ensureDir(): void {
 }
 
 export function readConfig(): Config {
+    const apiKey = process.env.DEEPSEEK_API_KEY?.trim()
+    if (apiKey) return {apiKey}
+
     ensureDir()
     const f = CONFIG_FILE()
     if (!existsSync(f)) {
@@ -43,19 +48,18 @@ export function saveConfig(apiKey: string): void {
 
 // ==================== 唯一上下文（就是 messages 数组） ====================
 
-export function readMessages(): any[] {
+export function readMessages(): ModelMessage[] {
     ensureDir()
     const f = CONTEXT_FILE()
     if (!existsSync(f)) return []
     try {
-        const data = JSON.parse(readFileSync(f, 'utf-8'))
-        return Array.isArray(data) ? data : []
+        return parseMessageHistory(JSON.parse(readFileSync(f, 'utf-8')))
     } catch {
         return []
     }
 }
 
-export function saveMessages(messages: any[]): void {
+export function saveMessages(messages: ModelMessage[]): void {
     ensureDir()
     writeFileSync(CONTEXT_FILE(), JSON.stringify(messages, null, 2), 'utf-8')
 }
@@ -66,7 +70,7 @@ export function clearMessages(): void {
 
 // ==================== 快照（以 ISO 时间命名，存到 snapshots 目录） ====================
 
-export function saveSnapshot(messages: any[]): string {
+export function saveSnapshot(messages: ModelMessage[]): string {
     ensureDir()
     const d = SNAPSHOTS_DIR()
     if (!existsSync(d)) mkdirSync(d, {recursive: true})
@@ -96,13 +100,12 @@ export function listSnapshots(): SnapshotInfo[] {
     })
 }
 
-export function loadSnapshot(name: string): any[] {
+export function loadSnapshot(name: string): ModelMessage[] {
     const d = SNAPSHOTS_DIR()
     const file = join(d, `${ name }.json`)
     if (!existsSync(file)) return []
     try {
-        const data = JSON.parse(readFileSync(file, 'utf-8'))
-        return Array.isArray(data) ? data : []
+        return parseMessageHistory(JSON.parse(readFileSync(file, 'utf-8')))
     } catch {
         return []
     }

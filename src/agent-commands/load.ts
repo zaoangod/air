@@ -1,9 +1,7 @@
-import {Message} from '@ai-zen/agents-core'
 import inquirer from 'inquirer'
 import type {ChatCtx} from '../agent-types.js'
 import {SYSTEM_PROMPT} from '../agent-constants.js'
 import {listSnapshots, loadSnapshot, saveMessages} from '../config.js'
-import {buildAgent} from '../agent-factory.js'
 
 export async function cmdLoad(ctx: ChatCtx): Promise<void> {
     const snapshots = listSnapshots()
@@ -13,7 +11,7 @@ export async function cmdLoad(ctx: ChatCtx): Promise<void> {
     }
     const {selectedName} = await inquirer.prompt([
         {
-            type: 'list',
+            type: 'select',
             name: 'selectedName',
             message: '选择要加载的快照:',
             pageSize: 15,
@@ -29,10 +27,10 @@ export async function cmdLoad(ctx: ChatCtx): Promise<void> {
     }
     let loaded = loadSnapshot(selectedName)
     if (loaded.length === 0) {
-        loaded = [ Message.System(SYSTEM_PROMPT) ]
+        loaded = [ {role: 'system', content: SYSTEM_PROMPT} ]
     }
     saveMessages(loaded)
     const snap = snapshots.find((s) => s.name === selectedName)
     console.log('\n✅ 已加载快照: ' + (snap ? snap.date : selectedName) + '\n')
-    ctx.agent = await buildAgent(loaded)
+    ctx.messages = loaded
 }

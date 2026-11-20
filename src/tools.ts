@@ -1,23 +1,18 @@
-import {CallbackTool} from '@ai-zen/agents-core'
+import type {Tool} from 'ai'
+import {tool} from 'ai'
 import {execSync} from 'node:child_process'
+import {z} from 'zod'
 
-export const shellTool = new CallbackTool({
-    function: {
-        name: 'shell',
+export const tools: {shell: Tool<{command: string}, string>} = {
+    shell: tool({
         description: '执行 shell 命令并返回输出',
-        parameters: {
-            type: 'object',
-            properties: {
-                command: {type: 'string', description: '要执行的命令'}
-            },
-            required: [ 'command' ]
+        inputSchema: z.object({command: z.string().describe('要执行的命令')}),
+        execute({command}) {
+            try {
+                return execSync(command, {encoding: 'utf-8', timeout: 30000})
+            } catch (error) {
+                return `错误: ${ error instanceof Error ? error.message : String(error) }`
+            }
         }
-    },
-    callback(this, args: {command: string}) {
-        try {
-            return execSync(args.command, {encoding: 'utf-8', timeout: 30000})
-        } catch (e: any) {
-            return `错误: ${ e.message }`
-        }
-    }
-})
+    })
+}

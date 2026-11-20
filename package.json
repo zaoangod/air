@@ -10,7 +10,7 @@
     "scripts": {
         "build": "tsc",
         "prepublishOnly": "node scripts/check-publish-tool.mjs && npm run build",
-        "start": "npm run build && node ./dist/cli.js",
+        "start": "npm run build && node --env-file-if-exists=.env.local ./dist/cli.js",
         "test": "vitest run",
         "test:watch": "vitest",
         "clean": "rimraf dist",
@@ -19,10 +19,12 @@
         "update:latest": "pnpm update --latest"
     },
     "dependencies": {
-        "@ai-zen/agents-core": "4.5.5",
+        "@ai-sdk/deepseek": "3.0.88",
+        "ai": "7.0.177",
         "chalk": "6.0.1",
         "commander": "15.1.0",
-        "inquirer": "14.3.0"
+        "inquirer": "14.3.0",
+        "zod": "4.6.7"
     },
     "devDependencies": {
         "@types/node": "26.6.6",

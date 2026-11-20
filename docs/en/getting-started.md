@@ -10,7 +10,7 @@ This page takes you from zero to running air: installing, configuring the API Ke
 
 ## Requirements
 
-- **Node.js**: needs to support ES Modules (`"type": "module"`); v18 or later is recommended.
+- **Node.js** versions supported by the current dependencies are 22.22.2+ in the 22.x line, 24.15.0+ in the 24.x line, and 26.0.0+.
 - **DeepSeek API Key**: air only supports the DeepSeek model, so you need a key from `https://platform.deepseek.com/api_keys`.
 - **Terminal**: the fallback terminal hook only supports `bash` / `zsh` (other features are not restricted by shell).
 

@@ -1,26 +1,23 @@
-import {Agent, ChatGPT, Message, OpenAI} from '@ai-zen/agents-core'
+import type {ModelMessage} from 'ai'
+import {generateText} from 'ai'
 import {readConfig} from './config.js'
+import {createModel} from './model.js'
 
 export const MAX_CONTEXT_CHARS = 500000
 
-export function contextSize(messages: any[]): number {
+export function contextSize(messages: readonly unknown[]): number {
     return JSON.stringify(messages).length
 }
 
-export function shouldMigrate(messages: any[]): boolean {
+export function shouldMigrate(messages: readonly unknown[]): boolean {
     return contextSize(messages) >= MAX_CONTEXT_CHARS
 }
 
-export async function generateMigrationDoc(messages: any[]): Promise<string> {
+export async function generateMigrationDoc(messages: ModelMessage[]): Promise<string> {
     const config = readConfig()
-    const endpoint = new OpenAI({openai_endpoint: 'https://api.deepseek.com/v1', api_key: config.apiKey})
-    const model = new ChatGPT({
-        model_config: {},
-        request_config: await endpoint.chatCompletion('deepseek-v4-flash')
-    })
-    const agent = new Agent({
-        model,
-        messages: [ Message.System(`你是一个专业的任务交接分析师。你的任务是阅读一段完整的AI助手与用户的对话历史，筛选出对后续工作有用的关键信息，生成一份结构清晰的交接文档。
+    const {text} = await generateText({
+        model: createModel(config.apiKey),
+        instructions: `你是一个专业的任务交接分析师。你的任务是阅读一段完整的AI助手与用户的对话历史，筛选出对后续工作有用的关键信息，生成一份结构清晰的交接文档。
 
 这份交接文档将作为新会话的第一条用户消息，让新的AI助手了解任务背景并继续工作。
 
@@ -74,19 +71,15 @@ export async function generateMigrationDoc(messages: any[]): Promise<string> {
 1. 只包含确定的信息，不要猜测或补充对话中没有的内容
 2. 已完成的任务只需列出任务标题和产出路径，不要罗列完成过程的每一步
 3. 如果某个部分没有需要记录的内容，标注"无"即可
-4. 语言风格与原始对话一致（中文）`) ],
-        tools: []
-    })
-    const historyJson = JSON.stringify(messages, null, 2)
-    const result = await agent.send(`请分析以下对话历史（JSON 格式）并生成交接文档。
+4. 语言风格与原始对话一致（中文）`,
+        prompt: `请分析以下对话历史（JSON 格式）并生成交接文档。
 
 这是 AI 助手与用户的完整对话记录，每条消息包含 role（角色）和 content（内容）字段。
-你可以使用 shell 工具读取文件、查看项目结构来验证对话中提到的信息。
 
 \`\`\`json
-${ historyJson }
-\`\`\``)
-    const last = result.at(-1)
-    if (!last || last.status === 'error') throw new Error('生成交接文档失败')
-    return typeof last.content === 'string' ? last.content : ''
+${ JSON.stringify(messages, null, 2) }
+\`\`\``
+    })
+    if (!text.trim()) throw new Error('生成交接文档失败')
+    return text
 }

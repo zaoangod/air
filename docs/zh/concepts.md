@@ -14,22 +14,15 @@ air 只给模型暴露**一个**工具：`shell`。
 
 ```ts
 // src/tools.ts（简化）
-export const shellTool = new CallbackTool({
-  function: {
-    name: "shell",
+export const tools = {
+  shell: tool({
     description: "执行 shell 命令并返回输出",
-    parameters: {
-      type: "object",
-      properties: {
-        command: { type: "string", description: "要执行的命令" },
-      },
-      required: ["command"],
+    inputSchema: z.object({ command: z.string() }),
+    execute({ command }) {
+      return execSync(command, { encoding: "utf-8", timeout: 30000 });
     },
-  },
-  callback(_this, args) {
-    return execSync(args.command, { encoding: "utf-8", timeout: 30000 });
-  },
-});
+  }),
+};
 ```
 
 - 参数只有一个：`command`（字符串）。
@@ -79,7 +72,7 @@ air **不内置额外的记忆持久化**，而是把记忆责任交给 AI 和�
 
 ## 模型与端点
 
-- 模型硬编码为 `deepseek-v4-flash`（`agent-factory.ts`）。
+- `model.ts` 通过 Vercel AI SDK 的 DeepSeek provider 使用 `deepseek-v4-flash`。
 - API 端点默认 `https://api.deepseek.com/v1`，可由 `AIR_API_ENDPOINT` 覆盖。
 
 ## 相关主题

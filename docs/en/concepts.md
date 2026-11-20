@@ -14,22 +14,15 @@ air exposes only **one** tool to the model: `shell`.
 
 ```ts
 // src/tools.ts (simplified)
-export const shellTool = new CallbackTool({
-  function: {
-    name: "shell",
+export const tools = {
+  shell: tool({
     description: "Execute a shell command and return its output",
-    parameters: {
-      type: "object",
-      properties: {
-        command: { type: "string", description: "The command to execute" },
-      },
-      required: ["command"],
+    inputSchema: z.object({ command: z.string() }),
+    execute({ command }) {
+      return execSync(command, { encoding: "utf-8", timeout: 30000 });
     },
-  },
-  callback(_this, args) {
-    return execSync(args.command, { encoding: "utf-8", timeout: 30000 });
-  },
-});
+  }),
+};
 ```
 
 - There is only one parameter: `command` (a string).
@@ -79,7 +72,7 @@ The system prompt (`agent-constants.ts`) requires the AI to follow these princip
 
 ## Model & endpoint
 
-- The model is hardcoded as `deepseek-v4-flash` (`agent-factory.ts`).
+- `model.ts` uses the Vercel AI SDK DeepSeek provider with `deepseek-v4-flash`.
 - The API endpoint defaults to `https://api.deepseek.com/v1`, overridable by `AIR_API_ENDPOINT`.
 
 ## Related topics

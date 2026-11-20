@@ -10,7 +10,7 @@ outline: deep
 
 ## 环境要求
 
-- **Node.js**：需要支持 ES Module（`"type": "module"`），建议 v18 及以上。
+- 当前依赖支持 **Node.js** 22.22.2 起的 22.x、24.15.0 起的 24.x，以及 26.0.0 及以上版本。
 - **DeepSeek API Key**：air 仅支持 DeepSeek 模型，需要在 `https://platform.deepseek.com/api_keys` 获取。
 - **终端**：兜底终端钩子仅支持 `bash` / `zsh`（其余功能不限制 shell）。
 

@@ -12,7 +12,7 @@ export async function cmdEditor(ctx: ChatCtx) {
     }
     try {
         await ctx.send(content.trim())
-        saveMessages(ctx.agent.messages)
+        saveMessages(ctx.messages)
     } catch (err: any) {
         console.error(`\n❌ ${ err.message }`)
     }

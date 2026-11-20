@@ -55,7 +55,8 @@ src/
 ├── hook.ts               # Fallback terminal hook (install/uninstall)
 ├── migration.ts          # Context counting & migration
 ├── tools.ts              # Tool definitions — shell
-├── agent-factory.ts      # Agent factory — build model & agent
+├── model.ts              # DeepSeek model via the Vercel AI SDK
+├── message-history.ts    # Read current and legacy conversation history
 ├── agent-runtime.ts      # Core runtime — send, chat loop
 ├── agent-types.ts        # Type definitions (ChatCtx, etc.)
 ├── agent-constants.ts    # System prompt & constants

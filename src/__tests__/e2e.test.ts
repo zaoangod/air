@@ -1,8 +1,13 @@
 import {afterAll, describe, expect, it} from 'vitest'
 import {spawn} from 'node:child_process'
-import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync} from 'node:fs'
+import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
+import {once} from 'node:events'
+import {createServer} from 'node:http'
 import {join} from 'node:path'
 import {tmpdir} from 'node:os'
+import {stripVTControlCharacters} from 'node:util'
+import type {ModelMessage} from 'ai'
+import {MAX_CONTEXT_CHARS} from '../migration.js'
 
 // ==================== Helpers ====================
 
@@ -18,25 +23,25 @@ function runCli(args: string[], stdinInput?: string, extraEnv?: Record<string, s
     return new Promise((resolve) => {
         const env = {
             ...process.env,
+            DEEPSEEK_API_KEY: '',
             ...extraEnv
         }
 
-        const proc = spawn('node', [ CLI, ...args ], {env, stdio: [ 'pipe', 'pipe', 'pipe' ]})
+        const proc = spawn(process.execPath, [ CLI, ...args ], {env, stdio: [ 'pipe', 'pipe', 'pipe' ]})
+        const lines = stdinInput?.trimEnd().split('\n') ?? []
 
         let stdout = ''
         let stderr = ''
 
         proc.stdout.on('data', (data: Buffer) => {
             stdout += data.toString()
+            if (lines.length && stripVTControlCharacters(stdout).trimEnd().endsWith('你:')) {
+                proc.stdin.write(`${ lines.shift() }\n`)
+            }
         })
         proc.stderr.on('data', (data: Buffer) => {
             stderr += data.toString()
         })
-
-        if (stdinInput !== undefined) {
-            proc.stdin.write(stdinInput)
-            proc.stdin.end()
-        }
 
         proc.on('close', (code) => {
             resolve({stdout, stderr, exitCode: code ?? -1})
@@ -112,6 +117,98 @@ describe('E2E: CLI 基本功能', () => {
     })
 })
 
+describe('E2E: Vercel AI SDK', () => {
+    it('流式完成工具调用，恢复对话并通过同一端点迁移上下文', async () => {
+        const requests: {path: string | undefined; auth: string | undefined; body: {messages: unknown[]; stream?: boolean; tools?: unknown[]}}[] = []
+        const server = createServer(async (req, res) => {
+            let body = ''
+            for await (const chunk of req) body += chunk.toString()
+            const request: (typeof requests)[number] = {path: req.url, auth: req.headers.authorization, body: JSON.parse(body)}
+            requests.push(request)
+
+            if (!request.body.stream) {
+                res.writeHead(200, {'Content-Type': 'application/json'})
+                res.end(JSON.stringify({choices: [ {message: {role: 'assistant', content: '交接摘要'}, finish_reason: 'stop'} ]}))
+                return
+            }
+
+            const writeChunk = (delta: object, finishReason: string | null = null) => {
+                res.write(`data: ${ JSON.stringify({choices: [ {index: 0, delta, finish_reason: finishReason} ]}) }\n\n`)
+            }
+            res.writeHead(200, {'Content-Type': 'text/event-stream'})
+            if (requests.length === 1) {
+                writeChunk({reasoning_content: '先执行命令。'})
+                writeChunk({
+                    tool_calls: [ {
+                        index: 0,
+                        id: 'call_air_test',
+                        type: 'function',
+                        function: {name: 'shell', arguments: '{"command":"printf air-test"}'}
+                    } ]
+                })
+                writeChunk({}, 'tool_calls')
+            } else {
+                writeChunk({content: '命令执行完成。'})
+                writeChunk({}, 'stop')
+            }
+            res.end('data: [DONE]\n\n')
+        })
+
+        server.listen(0, '127.0.0.1')
+        try {
+            await once(server, 'listening')
+            const address = server.address()
+            if (!address || typeof address === 'string') throw new Error('Mock server did not bind to a TCP port')
+            const airDir = makeTestDir()
+            const env = {AIR_DIR: airDir, AIR_API_ENDPOINT: `http://127.0.0.1:${ address.port }/v1`}
+            await runCli([ 'key', 'sk-test-ai-sdk' ], undefined, env)
+            const result = await runCli([ '执行测试命令' ], '/exit\n', env)
+
+            expect(result.stderr).toBe('')
+            expect(result.exitCode).toBe(0)
+            expect(result.stdout).toContain('先执行命令。')
+            expect(result.stdout).toContain('🔧 1 shell')
+            expect(result.stdout).toContain('命令执行完成。')
+            expect(requests).toHaveLength(2)
+            expect(requests[0]).toMatchObject({path: '/v1/chat/completions', auth: 'Bearer sk-test-ai-sdk', body: {stream: true}})
+            expect(requests[1].body.messages).toEqual(expect.arrayContaining([
+                expect.objectContaining({role: 'assistant', reasoning_content: '先执行命令。'}),
+                expect.objectContaining({role: 'tool', tool_call_id: 'call_air_test', content: 'air-test'})
+            ]))
+            const context = join(airDir, 'context.json')
+            const messages: ModelMessage[] = JSON.parse(readFileSync(context, 'utf-8'))
+            expect(messages).toEqual(expect.arrayContaining([
+                expect.objectContaining({role: 'tool', content: [ expect.objectContaining({toolCallId: 'call_air_test'}) ]}),
+                expect.objectContaining({role: 'assistant', content: [ expect.objectContaining({type: 'text', text: '命令执行完成。'}) ]})
+            ]))
+
+            writeFileSync(context, JSON.stringify([ ...messages, {role: 'user', content: 'a'.repeat(MAX_CONTEXT_CHARS)} ]))
+            const resumed = await runCli([], '继续\n/exit\n', env)
+
+            expect(resumed.exitCode).toBe(0)
+            expect(resumed.stderr).toBe('')
+            expect(resumed.stdout).toContain('✅ 迁移完成')
+            expect(requests).toHaveLength(4)
+            expect(requests[2].body.messages).toEqual(expect.arrayContaining([
+                expect.objectContaining({role: 'assistant', reasoning_content: '先执行命令。'}),
+                expect.objectContaining({role: 'tool', tool_call_id: 'call_air_test', content: 'air-test'}),
+                expect.objectContaining({role: 'user', content: '继续'})
+            ]))
+            expect(requests[3]).toMatchObject({path: '/v1/chat/completions', auth: 'Bearer sk-test-ai-sdk'})
+            expect(requests[3].body.stream).not.toBe(true)
+            expect(requests[3].body.tools).toBeUndefined()
+            expect(readdirSync(join(airDir, 'snapshots'))).toHaveLength(1)
+            expect(JSON.parse(readFileSync(context, 'utf-8'))).toEqual([
+                expect.objectContaining({role: 'system'}),
+                {role: 'user', content: '交接摘要'}
+            ])
+        } finally {
+            server.close()
+            server.closeAllConnections()
+        }
+    })
+})
+
 describe('E2E: 对话命令', () => {
     it('/save 保存快照', async (ctx) => {
         skipIfNoKey(ctx)
@@ -155,15 +252,18 @@ describe('E2E: 真实 API 对话', () => {
         // Verify context was saved with user message + AI response
         const contextFile = join(airDir, 'context.json')
         expect(existsSync(contextFile)).toBe(true)
-        const msgs = JSON.parse(readFileSync(contextFile, 'utf-8'))
+        const msgs: ModelMessage[] = JSON.parse(readFileSync(contextFile, 'utf-8'))
         expect(msgs.length).toBeGreaterThanOrEqual(2)
         expect(msgs[1].role).toBe('user')
         expect(msgs[1].content).toBe('用一句话介绍你自己')
 
         // Verify there's an assistant response
-        const assistantMsg = msgs.find((m: any) => m.role === 'assistant')
-        expect(assistantMsg).toBeTruthy()
-        expect(assistantMsg.content.length).toBeGreaterThan(10)
+        const assistantText = msgs.flatMap(message => {
+            if (message.role !== 'assistant') return []
+            if (typeof message.content === 'string') return [ message.content ]
+            return message.content.flatMap(part => part.type === 'text' ? [ part.text ] : [])
+        }).join('')
+        expect(assistantText.length).toBeGreaterThan(10)
     }, 30000)  // 30s timeout for real API
 
     it('/new 命令重置对话', async (ctx) => {

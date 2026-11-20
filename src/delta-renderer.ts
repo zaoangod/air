@@ -1,127 +1,38 @@
+import type {TextStreamPart, ToolSet} from 'ai'
 import chalk from 'chalk'
-import {AgentNS} from '@ai-zen/agents-core'
-
-interface ToolCallPrint {
-    name: string;
-    arguments: string;
-    namePrinted: boolean;
-    argsPrinted: boolean;
-    completed: boolean;
-}
-
-export interface DeltaRendererOptions {
-    reasoningHeader?: string;
-    contentHeader?: string;
-    reasoningStyle?: any;
-    contentStyle?: any;
-    indent?: string;
-}
 
 export class DeltaRenderer {
     private reasoningPrinted = false
     private contentPrinted = false
-    private toolPrints: Record<number, ToolCallPrint> = {}
-    private opts: Required<DeltaRendererOptions>
+    private toolsPrinted = 0
 
-    constructor(opts: DeltaRendererOptions = {}) {
-        this.opts = {
-            reasoningHeader: opts.reasoningHeader ?? '',
-            contentHeader: opts.contentHeader ?? '',
-            reasoningStyle: opts.reasoningStyle ?? chalk.blue,
-            contentStyle: opts.contentStyle ?? chalk.white,
-            indent: opts.indent ?? ''
-        }
-    }
-
-    render(delta: AgentNS.Delta, finishReason: AgentNS.FinishReason | null = null): void {
-        if (delta.tool_calls) {
-            this.renderToolCalls(delta, finishReason)
-        }
-        if (delta.reasoning_content) {
-            if (!this.reasoningPrinted && this.opts.reasoningHeader) {
-                process.stdout.write(this.opts.indent + this.opts.reasoningHeader)
-                this.reasoningPrinted = true
-            }
-            process.stdout.write(this.opts.reasoningStyle(delta.reasoning_content))
-        }
-        if (delta.content) {
-            if (!this.contentPrinted && this.opts.contentHeader) {
-                process.stdout.write(this.opts.indent + this.opts.contentHeader)
-                this.contentPrinted = true
-            }
-            if (typeof delta.content === 'string') {
-                process.stdout.write(this.opts.contentStyle(delta.content))
-            } else if (Array.isArray(delta.content)) {
-                for (const s of delta.content) {
-                    if (s.type === 'text' && s.text) {
-                        process.stdout.write(this.opts.contentStyle(s.text))
-                    }
+    render(part: TextStreamPart<ToolSet>): void {
+        switch (part.type) {
+            case 'start-step':
+                this.reasoningPrinted = false
+                this.contentPrinted = false
+                this.toolsPrinted = 0
+                break
+            case 'reasoning-delta':
+                if (!this.reasoningPrinted) {
+                    process.stdout.write('\n\n💭 思考中...\n')
+                    this.reasoningPrinted = true
                 }
-            }
-        }
-    }
-
-    reset(): void {
-        this.reasoningPrinted = false
-        this.contentPrinted = false
-        for (const k in this.toolPrints) delete this.toolPrints[k]
-    }
-
-    private renderToolCalls(delta: AgentNS.Delta, finishReason: AgentNS.FinishReason | null): void {
-        if (!delta.tool_calls || delta.tool_calls.length === 0) return
-
-        const isFirstToolCall =
-            Object.keys(this.toolPrints).length === 0 &&
-            delta.tool_calls.some((tc) => tc.function?.name || tc.function?.arguments)
-
-        if (isFirstToolCall)
-            process.stdout.write(chalk.blue.bold('\n\n💭 工具调用中...'))
-
-        for (const tc of delta.tool_calls) {
-            const index = tc.index ?? 0
-            const func = tc.function
-
-            if (!this.toolPrints[index]) {
-                this.toolPrints[index] = {
-                    name: '',
-                    arguments: '',
-                    namePrinted: false,
-                    argsPrinted: false,
-                    completed: false
+                process.stdout.write(chalk.blue(part.text))
+                break
+            case 'text-delta':
+                if (!this.contentPrinted) {
+                    process.stdout.write('\n\n💭 回答中...\n')
+                    this.contentPrinted = true
                 }
-            }
-
-            const p = this.toolPrints[index]
-
-            if (func?.name) p.name += func.name
-            if (func?.arguments) p.arguments += func.arguments
-
-            if (p.name && !p.namePrinted) {
-                process.stdout.write(chalk.magenta.bold(`\n🔧 ${ index } ${ p.name }\n`))
-                p.namePrinted = true
-            }
-
-            if (p.arguments && !p.argsPrinted && p.namePrinted) p.argsPrinted = true
-            if (func?.arguments && p.argsPrinted)
-                process.stdout.write(chalk.gray(func.arguments))
-
-            if (finishReason === AgentNS.FinishReason.ToolCalls) p.completed = true
-        }
-
-        if (finishReason === AgentNS.FinishReason.ToolCalls) {
-            for (const idx of Object.keys(this.toolPrints).map(Number)) {
-                const p = this.toolPrints[idx]
-                if (p.completed && p.arguments) {
-                    process.stdout.write('\n')
-                    try {
-                        const parsed = JSON.parse(p.arguments)
-                        process.stdout.write(chalk.gray(`    ${ JSON.stringify(parsed, null, 4) }\n`))
-                    } catch {
-                        process.stdout.write(chalk.gray(`    ${ p.arguments }\n`))
-                    }
-                }
-            }
-            process.stdout.write('\n')
+                process.stdout.write(chalk.white(part.text))
+                break
+            case 'tool-call':
+                if (this.toolsPrinted === 0) process.stdout.write(chalk.blue.bold('\n\n💭 工具调用中...'))
+                this.toolsPrinted++
+                process.stdout.write(chalk.magenta.bold(`\n🔧 ${ this.toolsPrinted } ${ part.toolName }\n`))
+                process.stdout.write(chalk.gray(`${ JSON.stringify(part.input, null, 4) }\n`))
+                break
         }
     }
 }

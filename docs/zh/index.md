@@ -55,7 +55,8 @@ src/
 ├── hook.ts               # 兜底终端钩子（install/uninstall）
 ├── migration.ts          # 上下文计数与迁移
 ├── tools.ts              # 工具定义——shell
-├── agent-factory.ts      # Agent 工厂——构建模型与 Agent
+├── model.ts              # 通过 Vercel AI SDK 创建 DeepSeek 模型
+├── message-history.ts    # 读取当前及旧版对话历史
 ├── agent-runtime.ts      # 核心运行时——send、chat loop
 ├── agent-types.ts        # 类型定义（ChatCtx 等）
 ├── agent-constants.ts    # 系统提示词与常量

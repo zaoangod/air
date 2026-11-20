@@ -1,6 +1,6 @@
-import {Agent} from '@ai-zen/agents-core'
+import type {ModelMessage} from 'ai'
 
 export interface ChatCtx {
-    agent: Agent;
+    messages: ModelMessage[];
     send: (text: string) => Promise<void>;
 }
