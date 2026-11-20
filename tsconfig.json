@@ -1,18 +1,26 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/__tests__/**"]
+    "compilerOptions": {
+        "target": "ES2023",
+        "lib": [
+            "ES2023"
+        ],
+        "module": "NodeNext",
+        "types": [
+            "node"
+        ],
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "strict": true,
+        "skipLibCheck": true,
+        "noEmitOnError": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "src/**/__tests__/**"
+    ]
 }
