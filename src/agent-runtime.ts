@@ -13,7 +13,7 @@ import {SYSTEM_PROMPT} from './agent-constants.js'
 // ==================== print (内部使用) ====================
 
 async function send(ctx: ChatCtx, model: ReturnType<typeof createModel>, text: string): Promise<void> {
-    console.log(chalk.green.bold('\n🤖 AI:'))
+    console.log(chalk.green.bold('🤖AI:'))
     const renderer = new DeltaRenderer()
     const userMessage = {role: 'user', content: text} as const
     const result = streamText({
@@ -34,8 +34,7 @@ async function send(ctx: ChatCtx, model: ReturnType<typeof createModel>, text: s
     }
 
     ctx.messages.push(userMessage, ...await result.responseMessages)
-    process.stdout.write('\n\n')
-    console.log()
+    process.stdout.write('\n')
 }
 
 // ==================== message ====================

@@ -15,21 +15,21 @@ export class DeltaRenderer {
                 break
             case 'reasoning-delta':
                 if (!this.reasoningPrint) {
-                    process.stdout.write('\n\n💭 思考中...\n')
+                    process.stdout.write('\n💭思考中...\n')
                     this.reasoningPrint = true
                 }
                 process.stdout.write(chalk.blue(part.text))
                 break
             case 'text-delta':
                 if (!this.contentPrint) {
-                    process.stdout.write('\n\n💭 回答中...\n')
+                    process.stdout.write('\n💭回答中...\n')
                     this.contentPrint = true
                 }
                 process.stdout.write(chalk.white(part.text))
                 break
             case 'tool-call':
                 if (this.toolPrint === 0) {
-                    process.stdout.write(chalk.blue.bold('\n\n💭 工具调用中...'))
+                    process.stdout.write(chalk.blue.bold('\n💭工具调用中...'))
                 }
                 this.toolPrint++
                 process.stdout.write(chalk.magenta.bold(`\n🔧 ${ this.toolPrint } ${ part.toolName }\n`))
