@@ -8,9 +8,9 @@
         "air": "dist/cli.js"
     },
     "scripts": {
+        "start": "npm run build && node --env-file-if-exists=.env.local ./dist/cli.js",
         "build": "tsc",
         "prepublishOnly": "node scripts/check-publish-tool.mjs && npm run build",
-        "start": "npm run build && node --env-file-if-exists=.env.local ./dist/cli.js",
         "test": "vitest run",
         "test:watch": "vitest",
         "clean": "rimraf dist",
