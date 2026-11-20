@@ -24,7 +24,7 @@ function makeCtx(messages: ChatCtx['messages'] = []): ChatCtx {
 
 describe('cmdNew', () => {
     it('写入 system prompt 并重置对话历史', async () => {
-        const {cmdNew} = await import('../agent-commands/new.js')
+        const {cmdNew} = await import('../agent-command/new.js')
         const ctx = makeCtx()
 
         await cmdNew(ctx)
@@ -50,14 +50,14 @@ describe('dispatchCommand', () => {
     })
 
     it('"/save" 调用 cmdSave', async () => {
-        const {cmdSave} = await import('../agent-commands/save.js')
+        const {cmdSave} = await import('../agent-command/save.js')
         const ctx = makeCtx([ {role: 'system', content: 'sys'} ])
         await cmdSave(ctx)
         expect(saveSnapshot).toHaveBeenCalledWith(ctx.messages)
     })
 
     it('"/new" 调用 cmdNew 并打印提示', async () => {
-        const {cmdNew} = await import('../agent-commands/new.js')
+        const {cmdNew} = await import('../agent-command/new.js')
         const ctx = makeCtx()
         const spy = vi.spyOn(console, 'log').mockImplementation(() => {
         })
@@ -67,7 +67,7 @@ describe('dispatchCommand', () => {
     })
 
     it('"/help" 打印帮助信息', async () => {
-        const {cmdHelp} = await import('../agent-commands/help.js')
+        const {cmdHelp} = await import('../agent-command/help.js')
         const spy = vi.spyOn(console, 'log').mockImplementation(() => {
         })
         cmdHelp()
@@ -84,7 +84,7 @@ describe('cmdBack', () => {
     })
 
     it('没有消息时提示无可撤回', async () => {
-        const {cmdBack} = await import('../agent-commands/back.js')
+        const {cmdBack} = await import('../agent-command/back.js')
         const ctx = makeCtx([ {role: 'system', content: 'sys'} ])
         const spy = vi.spyOn(console, 'log').mockImplementation(() => {
         })
@@ -94,7 +94,7 @@ describe('cmdBack', () => {
     })
 
     it('取消操作时不修改消息', async () => {
-        const {cmdBack} = await import('../agent-commands/back.js')
+        const {cmdBack} = await import('../agent-command/back.js')
         const msgs: ChatCtx['messages'] = [
             {role: 'system', content: 'sys'},
             {role: 'user', content: '你好'}
@@ -106,7 +106,7 @@ describe('cmdBack', () => {
     })
 
     it('选择用户消息后取消重发时保留历史', async () => {
-        const {cmdBack} = await import('../agent-commands/back.js')
+        const {cmdBack} = await import('../agent-command/back.js')
         const messages: ChatCtx['messages'] = [
             {role: 'user', content: '你好'},
             {role: 'assistant', content: '你好！'}
@@ -121,7 +121,7 @@ describe('cmdBack', () => {
     })
 
     it('选择工具结果后保留同一批次的结果', async () => {
-        const {cmdBack} = await import('../agent-commands/back.js')
+        const {cmdBack} = await import('../agent-command/back.js')
         const messages: ChatCtx['messages'] = [
             {role: 'user', content: '列出文件'},
             {
@@ -157,7 +157,7 @@ describe('cmdLoad', () => {
     })
 
     it('没有快照时提示', async () => {
-        const {cmdLoad} = await import('../agent-commands/load.js')
+        const {cmdLoad} = await import('../agent-command/load.js')
         const ctx = makeCtx()
         vi.mocked(listSnapshots).mockReturnValueOnce([])
         const spy = vi.spyOn(console, 'log').mockImplementation(() => {
@@ -176,7 +176,7 @@ describe('cmdEditor', () => {
     })
 
     it('取消编辑不报错', async () => {
-        const {cmdEditor} = await import('../agent-commands/editor.js')
+        const {cmdEditor} = await import('../agent-command/editor.js')
         const ctx = makeCtx()
         mockPrompt.mockResolvedValueOnce({content: ''})
         await cmdEditor(ctx)

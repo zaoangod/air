@@ -6,7 +6,7 @@ import {readConfig, readMessages, saveMessages, saveSnapshot} from './config.js'
 import {createModel} from './model.js'
 import {tools} from './tools.js'
 import {contextSize, generateMigrationDoc, MAX_CONTEXT_CHARS, shouldMigrate} from './migration.js'
-import {dispatchCommand} from './agent-commands/index.js'
+import {dispatchCommand} from './agent-command/index.js'
 import type {ChatCtx} from './agent-types.js'
 import {SYSTEM_PROMPT} from './agent-constants.js'
 
