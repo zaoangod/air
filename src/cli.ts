@@ -1,20 +1,16 @@
 #!/usr/bin/env node
 import {Command} from 'commander'
-import {readFileSync} from 'node:fs'
 import {runChat} from './agent-runtime.js'
-import {installHook, uninstallHook} from './hook.js'
 import {readConfig, saveConfig} from './config.js'
-
-const {version} = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
-)
+import {installHook, uninstallHook} from './hook.js'
+import packageJson from '../package.json' with {type: 'json'}
 
 const program = new Command()
 
 program
-    .name('air')
-    .description('极简 AI 命令行助手')
-    .version(version)
+    .name(packageJson.name)
+    .version(packageJson.version)
+    .description(packageJson.description)
 
 program
     .command('key')
