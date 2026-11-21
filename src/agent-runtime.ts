@@ -1,14 +1,14 @@
-import {streamText} from 'ai'
 import chalk from 'chalk'
+import {streamText} from 'ai'
 import inquirer from 'inquirer'
-import {DeltaRenderer} from './delta-renderer.js'
-import {readConfig, readMessages, saveMessages, saveSnapshot} from './config.js'
+import {tools} from './tool/tools.js'
 import {createModel} from './model.js'
-import {tools} from './tools.js'
-import {contextSize, generateMigrationDoc, MAX_CONTEXT_CHARS, shouldMigrate} from './migration.js'
-import {dispatchCommand} from './agent-command/index.js'
 import type {ChatContext} from './agent-type.js'
 import {SYSTEM_PROMPT} from './agent-constant.js'
+import {DeltaRenderer} from './delta-renderer.js'
+import {dispatchCommand} from './agent-command/index.js'
+import {readConfig, readMessages, saveMessages, saveSnapshot} from './config.js'
+import {contextSize, generateMigrationDoc, MAX_CONTEXT_CHARS, shouldMigrate} from './migration.js'
 
 // ==================== print (内部使用) ====================
 
