@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import {streamText} from 'ai'
 import inquirer from 'inquirer'
-import {tools} from './tool/tools.js'
+import {tools} from './tool/index.js'
 import {createModel} from './model.js'
 import type {ChatContext} from './agent-type.js'
 import {SYSTEM_PROMPT} from './agent-constant.js'

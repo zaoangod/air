@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {asSchema} from 'ai'
-import {tools} from '../tools.js'
+import {tools} from '../tool'
 
 describe('shell tool', () => {
     it('具有正确的名称和描述', () => {
