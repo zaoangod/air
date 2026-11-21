@@ -1,5 +1,5 @@
-import {createDeepSeek} from '@ai-sdk/deepseek'
 import type {LanguageModel} from 'ai'
+import {createDeepSeek} from '@ai-sdk/deepseek'
 
 const MODEL_NAME = 'deepseek-v4-flash'
 

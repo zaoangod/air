@@ -1,5 +1,5 @@
-import {homedir} from 'node:os'
 import {join} from 'node:path'
+import {homedir} from 'node:os'
 import {appendFileSync, existsSync, readFileSync, writeFileSync} from 'node:fs'
 
 const MARKER_START = '# === air hook (开始) ==='

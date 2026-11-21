@@ -13,23 +13,23 @@ export interface Config {
 
 // ==================== 路径 ====================
 
-const AIR_DIR = () => process.env.AIR_DIR || join(homedir(), `.${ pkg.name }`)
-const CONFIG_FILE = () => join(AIR_DIR(), 'config.json')
-const CONTEXT_FILE = () => join(AIR_DIR(), 'context.json')
-const SNAPSHOT_DIR = () => join(AIR_DIR(), 'snapshot')
+const BASE_DIR = () => process.env.AIR_DIR || join(homedir(), `.${ pkg.name }`)
+const CONFIG_FILE = () => join(BASE_DIR(), 'config.json')
+const CONTEXT_FILE = () => join(BASE_DIR(), 'context.json')
+const SNAPSHOT_DIR = () => join(BASE_DIR(), 'snapshot')
 
 // ==================== 配置（只有 apiKey） ====================
 
-export function ensureDir(): void {
-    const d = AIR_DIR()
-    if (!existsSync(d)) mkdirSync(d, {recursive: true})
+export function ensureBaseDir(): void {
+    const baseDir = BASE_DIR()
+    if (!existsSync(baseDir)) mkdirSync(baseDir, {recursive: true})
 }
 
 export function readConfig(): Config {
     const apiKey = process.env.DEEPSEEK_API_KEY?.trim()
     if (apiKey) return {apiKey}
 
-    ensureDir()
+    ensureBaseDir()
     const f = CONFIG_FILE()
     if (!existsSync(f)) {
         writeFileSync(f, JSON.stringify({apiKey: ''}, null, 2), 'utf-8')
@@ -43,14 +43,14 @@ export function readConfig(): Config {
 }
 
 export function saveConfig(apiKey: string): void {
-    ensureDir()
+    ensureBaseDir()
     writeFileSync(CONFIG_FILE(), JSON.stringify({apiKey}, null, 2), 'utf-8')
 }
 
 // ==================== 唯一上下文（就是 messages 数组） ====================
 
 export function readMessages(): ModelMessage[] {
-    ensureDir()
+    ensureBaseDir()
     const f = CONTEXT_FILE()
     if (!existsSync(f)) return []
     try {
@@ -61,7 +61,7 @@ export function readMessages(): ModelMessage[] {
 }
 
 export function saveMessageList(messageList: ModelMessage[]): void {
-    ensureDir()
+    ensureBaseDir()
     writeFileSync(CONTEXT_FILE(), JSON.stringify(messageList, null, 2), 'utf-8')
 }
 
@@ -72,7 +72,7 @@ export function clearMessages(): void {
 // ==================== 快照（以 ISO 时间命名，存到 snapshots 目录） ====================
 
 export function saveSnapshot(messages: ModelMessage[]): string {
-    ensureDir()
+    ensureBaseDir()
     const d = SNAPSHOT_DIR()
     if (!existsSync(d)) mkdirSync(d, {recursive: true})
     const name = new Date().toISOString().replace(/[:.]/g, '-')
