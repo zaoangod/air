@@ -61,3 +61,7 @@ program
     })
 
 program.parse(process.argv)
+
+async function main() {
+
+}

@@ -1,6 +1,6 @@
 import type {ModelMessage} from 'ai'
 
-export interface ChatCtx {
-    messages: ModelMessage[];
+export interface ChatContext {
+    messageList: ModelMessage[];
     send: (text: string) => Promise<void>;
 }

@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {ChatCtx} from '../agent-types.js'
+import type {ChatContext} from '../agent-type.js'
 
 // Mock all external dependencies
 vi.mock('inquirer', () => ({default: {prompt: vi.fn()}}))
@@ -13,9 +13,9 @@ vi.mock('../config.js', () => ({
 const mockPrompt = vi.mocked((await import('inquirer')).default.prompt)
 const {saveMessages, saveSnapshot, listSnapshots, loadSnapshot} = await import('../config.js')
 
-function makeCtx(messages: ChatCtx['messages'] = []): ChatCtx {
+function makeCtx(messages: ChatContext['messageList'] = []): ChatContext {
     return {
-        messages,
+        messageList: messages,
         send: vi.fn()
     }
 }
@@ -32,7 +32,7 @@ describe('cmdNew', () => {
         expect(saveMessages).toHaveBeenCalledWith(
             expect.arrayContaining([ expect.objectContaining({role: 'system'}) ])
         )
-        expect(ctx.messages).toEqual([ expect.objectContaining({role: 'system'}) ])
+        expect(ctx.messageList).toEqual([ expect.objectContaining({role: 'system'}) ])
     })
 })
 
@@ -53,7 +53,7 @@ describe('dispatchCommand', () => {
         const {cmdSave} = await import('../agent-command/save.js')
         const ctx = makeCtx([ {role: 'system', content: 'sys'} ])
         await cmdSave(ctx)
-        expect(saveSnapshot).toHaveBeenCalledWith(ctx.messages)
+        expect(saveSnapshot).toHaveBeenCalledWith(ctx.messageList)
     })
 
     it('"/new" 调用 cmdNew 并打印提示', async () => {
@@ -95,19 +95,19 @@ describe('cmdBack', () => {
 
     it('取消操作时不修改消息', async () => {
         const {cmdBack} = await import('../agent-command/back.js')
-        const msgs: ChatCtx['messages'] = [
+        const msgs: ChatContext['messageList'] = [
             {role: 'system', content: 'sys'},
             {role: 'user', content: '你好'}
         ]
         const ctx = makeCtx(msgs)
         mockPrompt.mockResolvedValueOnce({selectedIndex: -1})
         await cmdBack(ctx)
-        expect(ctx.messages).toBe(msgs)
+        expect(ctx.messageList).toBe(msgs)
     })
 
     it('选择用户消息后取消重发时保留历史', async () => {
         const {cmdBack} = await import('../agent-command/back.js')
-        const messages: ChatCtx['messages'] = [
+        const messages: ChatContext['messageList'] = [
             {role: 'user', content: '你好'},
             {role: 'assistant', content: '你好！'}
         ]
@@ -116,13 +116,13 @@ describe('cmdBack', () => {
 
         await cmdBack(ctx)
 
-        expect(ctx.messages).toBe(messages)
+        expect(ctx.messageList).toBe(messages)
         expect(ctx.send).not.toHaveBeenCalled()
     })
 
     it('选择工具结果后保留同一批次的结果', async () => {
         const {cmdBack} = await import('../agent-command/back.js')
-        const messages: ChatCtx['messages'] = [
+        const messages: ChatContext['messageList'] = [
             {role: 'user', content: '列出文件'},
             {
                 role: 'assistant', content: [
@@ -143,9 +143,9 @@ describe('cmdBack', () => {
 
         await cmdBack(ctx)
 
-        expect(ctx.messages).toEqual(messages.slice(0, 3))
+        expect(ctx.messageList).toEqual(messages.slice(0, 3))
         expect(ctx.send).toHaveBeenCalledWith('继续')
-        expect(saveMessages).toHaveBeenCalledWith(ctx.messages)
+        expect(saveMessages).toHaveBeenCalledWith(ctx.messageList)
     })
 })
 

@@ -1,7 +1,6 @@
-import type {Tool} from 'ai'
-import {tool} from 'ai'
-import {execSync} from 'node:child_process'
 import {z} from 'zod'
+import {type Tool, tool} from 'ai'
+import {execSync} from 'node:child_process'
 
 export const tools: {shell: Tool<{command: string}, string>} = {
     shell: tool({

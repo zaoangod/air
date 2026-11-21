@@ -1,8 +1,9 @@
-import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
-import {homedir} from 'node:os'
 import {join} from 'node:path'
+import {homedir} from 'node:os'
 import type {ModelMessage} from 'ai'
+import pkg from '../package.json' with {type: 'json'}
 import {parseMessageHistory} from './message-history.js'
+import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 
 // ==================== 类型 ====================
 
@@ -12,10 +13,10 @@ export interface Config {
 
 // ==================== 路径 ====================
 
-const AIR_DIR = () => process.env.AIR_DIR || join(homedir(), '.ai-zen', 'air')
+const AIR_DIR = () => process.env.AIR_DIR || join(homedir(), `.${ pkg.name }`)
 const CONFIG_FILE = () => join(AIR_DIR(), 'config.json')
 const CONTEXT_FILE = () => join(AIR_DIR(), 'context.json')
-const SNAPSHOTS_DIR = () => join(AIR_DIR(), 'snapshots')
+const SNAPSHOT_DIR = () => join(AIR_DIR(), 'snapshot')
 
 // ==================== 配置（只有 apiKey） ====================
 
@@ -72,7 +73,7 @@ export function clearMessages(): void {
 
 export function saveSnapshot(messages: ModelMessage[]): string {
     ensureDir()
-    const d = SNAPSHOTS_DIR()
+    const d = SNAPSHOT_DIR()
     if (!existsSync(d)) mkdirSync(d, {recursive: true})
     const name = new Date().toISOString().replace(/[:.]/g, '-')
     const file = join(d, `${ name }.json`)
@@ -86,7 +87,7 @@ export interface SnapshotInfo {
 }
 
 export function listSnapshots(): SnapshotInfo[] {
-    const d = SNAPSHOTS_DIR()
+    const d = SNAPSHOT_DIR()
     if (!existsSync(d)) return []
     const files = readdirSync(d).filter((f) => f.endsWith('.json')).sort().reverse()
     return files.map((f) => {
@@ -101,7 +102,7 @@ export function listSnapshots(): SnapshotInfo[] {
 }
 
 export function loadSnapshot(name: string): ModelMessage[] {
-    const d = SNAPSHOTS_DIR()
+    const d = SNAPSHOT_DIR()
     const file = join(d, `${ name }.json`)
     if (!existsSync(file)) return []
     try {

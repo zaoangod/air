@@ -1,9 +1,9 @@
 import inquirer from 'inquirer'
-import type {ChatCtx} from '../agent-types.js'
+import type {ChatContext} from '../agent-type.js'
 import {saveMessages} from '../config.js'
 
-export async function cmdBack(ctx: ChatCtx): Promise<void> {
-    const choices = ctx.messages.flatMap((message, index) => {
+export async function cmdBack(ctx: ChatContext): Promise<void> {
+    const choices = ctx.messageList.flatMap((message, index) => {
         let text: string
         let label: string
         if (message.role === 'user' && typeof message.content === 'string') {
@@ -36,7 +36,7 @@ export async function cmdBack(ctx: ChatCtx): Promise<void> {
         return
     }
 
-    const selected = ctx.messages[selectedIndex]
+    const selected = ctx.messageList[selectedIndex]
     const originalText = selected.role === 'user' && typeof selected.content === 'string' ? selected.content : undefined
     let textToSend: string
 
@@ -82,13 +82,13 @@ export async function cmdBack(ctx: ChatCtx): Promise<void> {
         }
     }
 
-    const previous = ctx.messages
-    ctx.messages = previous.slice(0, originalText !== undefined ? selectedIndex : selectedIndex + 1)
+    const previous = ctx.messageList
+    ctx.messageList = previous.slice(0, originalText !== undefined ? selectedIndex : selectedIndex + 1)
     try {
         await ctx.send(textToSend)
-        saveMessages(ctx.messages)
+        saveMessages(ctx.messageList)
     } catch (error) {
-        ctx.messages = previous
+        ctx.messageList = previous
         console.error(`\n❌ ${ error instanceof Error ? error.message : String(error) }`)
     }
 }

@@ -7,18 +7,18 @@ import {createModel} from './model.js'
 import {tools} from './tools.js'
 import {contextSize, generateMigrationDoc, MAX_CONTEXT_CHARS, shouldMigrate} from './migration.js'
 import {dispatchCommand} from './agent-command/index.js'
-import type {ChatCtx} from './agent-types.js'
-import {SYSTEM_PROMPT} from './agent-constants.js'
+import type {ChatContext} from './agent-type.js'
+import {SYSTEM_PROMPT} from './agent-constant.js'
 
 // ==================== print (内部使用) ====================
 
-async function send(ctx: ChatCtx, model: ReturnType<typeof createModel>, text: string): Promise<void> {
+async function send(ctx: ChatContext, model: ReturnType<typeof createModel>, text: string): Promise<void> {
     console.log(chalk.green.bold('🤖AI:'))
     const renderer = new DeltaRenderer()
     const userMessage = {role: 'user', content: text} as const
     const result = streamText({
         model,
-        messages: [ ...ctx.messages, userMessage ],
+        messages: [ ...ctx.messageList, userMessage ],
         allowSystemInMessages: true,
         tools,
         // Continue after tool results until the model finishes the turn.
@@ -33,29 +33,29 @@ async function send(ctx: ChatCtx, model: ReturnType<typeof createModel>, text: s
         renderer.render(part)
     }
 
-    ctx.messages.push(userMessage, ...await result.responseMessages)
+    ctx.messageList.push(userMessage, ...await result.responseMessages)
     process.stdout.write('\n')
 }
 
 // ==================== message ====================
 
-async function handleMessage(ctx: ChatCtx, text: string): Promise<void> {
+async function handleMessage(ctx: ChatContext, text: string): Promise<void> {
     try {
         await ctx.send(text)
-        saveMessages(ctx.messages)
+        saveMessages(ctx.messageList)
 
-        if (shouldMigrate(ctx.messages)) {
-            console.log(`🔄 上下文 ${ contextSize(ctx.messages) }/${ MAX_CONTEXT_CHARS }，准备迁移...`)
+        if (shouldMigrate(ctx.messageList)) {
+            console.log(`🔄 上下文 ${ contextSize(ctx.messageList) }/${ MAX_CONTEXT_CHARS }，准备迁移...`)
             try {
-                const snap = saveSnapshot(ctx.messages)
+                const snap = saveSnapshot(ctx.messageList)
                 console.log(`  💾 快照: ${ snap }`)
-                const summary = await generateMigrationDoc(ctx.messages)
-                const messages: ChatCtx['messages'] = [
+                const summary = await generateMigrationDoc(ctx.messageList)
+                const messages: ChatContext['messageList'] = [
                     {role: 'system', content: SYSTEM_PROMPT},
                     {role: 'user', content: summary}
                 ]
                 saveMessages(messages)
-                ctx.messages = messages
+                ctx.messageList = messages
                 console.log('✅ 迁移完成\n')
             } catch (error) {
                 console.error(`❌ 迁移失败: ${ error instanceof Error ? error.message : String(error) }\n`)
@@ -68,7 +68,7 @@ async function handleMessage(ctx: ChatCtx, text: string): Promise<void> {
 
 // ==================== runtime ====================
 
-async function chatLoop(ctx: ChatCtx) {
+async function chatLoop(ctx: ChatContext) {
     while (true) {
         const {input} = await inquirer.prompt([
             {type: 'input', name: 'input', message: '你:'}
@@ -97,17 +97,17 @@ export async function runChat(initialMessage?: string): Promise<void> {
         saveMessages(msgs)
     }
     const model = createModel(config.apiKey)
-    const ctx: ChatCtx = {
-        messages: msgs,
+    const ctx: ChatContext = {
+        messageList: msgs,
         send(text: string) {
             return send(this, model, text)
         }
     }
 
     if (initialMessage) {
-        const hasHistory = ctx.messages.some(m => m.role === 'user' || m.role === 'assistant')
+        const hasHistory = ctx.messageList.some(m => m.role === 'user' || m.role === 'assistant')
         if (hasHistory) {
-            const snap = saveSnapshot(ctx.messages)
+            const snap = saveSnapshot(ctx.messageList)
             console.log(`💾 已存档旧对话: ${ snap }\n`)
         }
         await dispatchCommand(ctx, '/new')
@@ -118,9 +118,9 @@ export async function runChat(initialMessage?: string): Promise<void> {
         return
     }
 
-    const msgCount = ctx.messages.filter((m) => m.role !== 'system').length
+    const msgCount = ctx.messageList.filter((m) => m.role !== 'system').length
     console.log(msgCount > 0
-        ? `\n💬 继续上次对话 (${ msgCount } 条，/${ contextSize(ctx.messages) } 字符，输入 /new 重新开始)\n`
+        ? `\n💬 继续上次对话 (${ msgCount } 条，/${ contextSize(ctx.messageList) } 字符，输入 /new 重新开始)\n`
         : '\n💬 air — 极简 AI 助手 (输入 /help 查看命令)\n')
 
     await chatLoop(ctx)

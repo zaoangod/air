@@ -1,4 +1,4 @@
-import type {ChatCtx} from '../agent-types.js'
+import type {ChatContext} from '../agent-type.js'
 import {cmdExit} from './exit.js'
 import {cmdHelp} from './help.js'
 import {cmdSave} from './save.js'
@@ -7,7 +7,7 @@ import {cmdLoad} from './load.js'
 import {cmdEditor} from './editor.js'
 import {cmdBack} from './back.js'
 
-export async function dispatchCommand(ctx: ChatCtx, cmd: string): Promise<void> {
+export async function dispatchCommand(ctx: ChatContext, cmd: string): Promise<void> {
     switch (cmd) {
         case '/exit':
         case '/quit':
