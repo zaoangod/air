@@ -7,7 +7,7 @@ import type {ChatContext} from './agent-type.js'
 import {SYSTEM_PROMPT} from './agent-constant.js'
 import {DeltaRenderer} from './delta-renderer.js'
 import {dispatchCommand} from './agent-command/index.js'
-import {readConfig, readMessages, saveMessages, saveSnapshot} from './config.js'
+import {readConfig, readMessages, saveMessageList, saveSnapshot} from './config.js'
 import {contextSize, generateMigrationDoc, MAX_CONTEXT_CHARS, shouldMigrate} from './migration.js'
 
 // ==================== print (内部使用) ====================
@@ -42,7 +42,7 @@ async function send(ctx: ChatContext, model: ReturnType<typeof createModel>, tex
 async function handleMessage(ctx: ChatContext, text: string): Promise<void> {
     try {
         await ctx.send(text)
-        saveMessages(ctx.messageList)
+        saveMessageList(ctx.messageList)
 
         if (shouldMigrate(ctx.messageList)) {
             console.log(`🔄 上下文 ${ contextSize(ctx.messageList) }/${ MAX_CONTEXT_CHARS }，准备迁移...`)
@@ -54,7 +54,7 @@ async function handleMessage(ctx: ChatContext, text: string): Promise<void> {
                     {role: 'system', content: SYSTEM_PROMPT},
                     {role: 'user', content: summary}
                 ]
-                saveMessages(messages)
+                saveMessageList(messages)
                 ctx.messageList = messages
                 console.log('✅ 迁移完成\n')
             } catch (error) {
@@ -91,14 +91,14 @@ export async function runChat(initialMessage?: string): Promise<void> {
         process.exit(1)
     }
 
-    let msgs = readMessages()
-    if (msgs.length === 0) {
-        msgs = [ {role: 'system', content: SYSTEM_PROMPT} ]
-        saveMessages(msgs)
+    let messageList = readMessages()
+    if (messageList.length === 0) {
+        messageList = [ {role: 'system', content: SYSTEM_PROMPT} ]
+        saveMessageList(messageList)
     }
     const model = createModel(config.apiKey)
     const ctx: ChatContext = {
-        messageList: msgs,
+        messageList: messageList,
         send(text: string) {
             return send(this, model, text)
         }

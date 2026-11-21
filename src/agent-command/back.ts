@@ -1,6 +1,6 @@
 import inquirer from 'inquirer'
 import type {ChatContext} from '../agent-type.js'
-import {saveMessages} from '../config.js'
+import {saveMessageList} from '../config.js'
 
 export async function cmdBack(ctx: ChatContext): Promise<void> {
     const choices = ctx.messageList.flatMap((message, index) => {
@@ -86,7 +86,7 @@ export async function cmdBack(ctx: ChatContext): Promise<void> {
     ctx.messageList = previous.slice(0, originalText !== undefined ? selectedIndex : selectedIndex + 1)
     try {
         await ctx.send(textToSend)
-        saveMessages(ctx.messageList)
+        saveMessageList(ctx.messageList)
     } catch (error) {
         ctx.messageList = previous
         console.error(`\n❌ ${ error instanceof Error ? error.message : String(error) }`)

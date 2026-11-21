@@ -11,7 +11,7 @@ vi.mock('../config.js', () => ({
 }))
 
 const mockPrompt = vi.mocked((await import('inquirer')).default.prompt)
-const {saveMessages, saveSnapshot, listSnapshots, loadSnapshot} = await import('../config.js')
+const {saveMessageList, saveSnapshot, listSnapshots, loadSnapshot} = await import('../config.js')
 
 function makeCtx(messages: ChatContext['messageList'] = []): ChatContext {
     return {
@@ -29,7 +29,7 @@ describe('cmdNew', () => {
 
         await cmdNew(ctx)
 
-        expect(saveMessages).toHaveBeenCalledWith(
+        expect(saveMessageList).toHaveBeenCalledWith(
             expect.arrayContaining([ expect.objectContaining({role: 'system'}) ])
         )
         expect(ctx.messageList).toEqual([ expect.objectContaining({role: 'system'}) ])
@@ -145,7 +145,7 @@ describe('cmdBack', () => {
 
         expect(ctx.messageList).toEqual(messages.slice(0, 3))
         expect(ctx.send).toHaveBeenCalledWith('继续')
-        expect(saveMessages).toHaveBeenCalledWith(ctx.messageList)
+        expect(saveMessageList).toHaveBeenCalledWith(ctx.messageList)
     })
 })
 
@@ -180,6 +180,6 @@ describe('cmdEditor', () => {
         const ctx = makeCtx()
         mockPrompt.mockResolvedValueOnce({content: ''})
         await cmdEditor(ctx)
-        expect(saveMessages).not.toHaveBeenCalled()
+        expect(saveMessageList).not.toHaveBeenCalled()
     })
 })

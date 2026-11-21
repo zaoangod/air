@@ -1,7 +1,7 @@
 import inquirer from 'inquirer'
 import type {ChatContext} from '../agent-type.js'
 import {SYSTEM_PROMPT} from '../agent-constant.js'
-import {listSnapshots, loadSnapshot, saveMessages} from '../config.js'
+import {listSnapshots, loadSnapshot, saveMessageList} from '../config.js'
 
 export async function cmdLoad(ctx: ChatContext): Promise<void> {
     const snapshots = listSnapshots()
@@ -29,7 +29,7 @@ export async function cmdLoad(ctx: ChatContext): Promise<void> {
     if (loaded.length === 0) {
         loaded = [ {role: 'system', content: SYSTEM_PROMPT} ]
     }
-    saveMessages(loaded)
+    saveMessageList(loaded)
     const snap = snapshots.find((s) => s.name === selectedName)
     console.log('\n✅ 已加载快照: ' + (snap ? snap.date : selectedName) + '\n')
     ctx.messageList = loaded

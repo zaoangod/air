@@ -3,7 +3,7 @@ import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync}
 import {join} from 'node:path'
 import {tmpdir} from 'node:os'
 import type {ModelMessage} from 'ai'
-import {clearMessages, listSnapshots, loadSnapshot, readConfig, readMessages, saveConfig, saveMessages, saveSnapshot} from '../config.js'
+import {clearMessages, listSnapshots, loadSnapshot, readConfig, readMessages, saveConfig, saveMessageList, saveSnapshot} from '../config.js'
 
 describe('config', () => {
     let tempDir: string
@@ -63,12 +63,12 @@ describe('config', () => {
                 {role: 'user', content: '你好'},
                 {role: 'assistant', content: '你好！'}
             ]
-            saveMessages(msgs)
+            saveMessageList(msgs)
             expect(readMessages()).toEqual(msgs)
         })
 
         it('clearMessages 清空为 []', () => {
-            saveMessages([ {role: 'user', content: 'hi'} ])
+            saveMessageList([ {role: 'user', content: 'hi'} ])
             clearMessages()
             expect(readMessages()).toEqual([])
         })
@@ -166,7 +166,7 @@ describe('config', () => {
         expect(loadSnapshot('legacy')).toEqual(messages)
         expect(readFileSync(snapshotFile, 'utf-8')).toBe(original)
 
-        saveMessages(messages)
+        saveMessageList(messages)
         expect(readMessages()).toEqual(messages)
     })
 })

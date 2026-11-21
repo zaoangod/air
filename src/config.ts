@@ -60,13 +60,13 @@ export function readMessages(): ModelMessage[] {
     }
 }
 
-export function saveMessages(messages: ModelMessage[]): void {
+export function saveMessageList(messageList: ModelMessage[]): void {
     ensureDir()
-    writeFileSync(CONTEXT_FILE(), JSON.stringify(messages, null, 2), 'utf-8')
+    writeFileSync(CONTEXT_FILE(), JSON.stringify(messageList, null, 2), 'utf-8')
 }
 
 export function clearMessages(): void {
-    saveMessages([])
+    saveMessageList([])
 }
 
 // ==================== 快照（以 ISO 时间命名，存到 snapshots 目录） ====================

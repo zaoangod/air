@@ -1,6 +1,6 @@
 import inquirer from 'inquirer'
 import type {ChatContext} from '../agent-type.js'
-import {saveMessages} from '../config.js'
+import {saveMessageList} from '../config.js'
 
 export async function cmdEditor(ctx: ChatContext) {
     const {content} = await inquirer.prompt([
@@ -12,7 +12,7 @@ export async function cmdEditor(ctx: ChatContext) {
     }
     try {
         await ctx.send(content.trim())
-        saveMessages(ctx.messageList)
+        saveMessageList(ctx.messageList)
     } catch (err: any) {
         console.error(`\n❌ ${ err.message }`)
     }
